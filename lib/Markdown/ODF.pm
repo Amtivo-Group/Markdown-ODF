@@ -241,7 +241,7 @@ sub _para
 
 =head2 append_element($element)
 
-Add a ODF::lpOD::Element to the current document and update L</"current_element()">.
+Add a ODF::lpOD::Element to the current document and update L</"current_element">.
 
 =cut
 
