@@ -122,6 +122,15 @@ sub _build_odf
     $odf;
 }
 
+has _parser => (
+    is => 'lazy',
+);
+
+sub _build__parser
+{   my $self = shift;
+    Markdown::Parser->new;
+}
+
 =head2 add_markdown($markdown)
 
 Add markdown content as a paragraph to the current ODF page.
@@ -130,8 +139,7 @@ Add markdown content as a paragraph to the current ODF page.
 
 sub add_markdown
 {   my ($self, $md) = @_;
-    my $parser = Markdown::Parser->new;
-    my $doc = $parser->parse($md);
+    my $doc = $self->_parser->parse($md);
     $self->_print($doc);
 }
 
