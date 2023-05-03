@@ -139,8 +139,30 @@ Add markdown content as a paragraph to the current ODF page.
 
 sub add_markdown
 {   my ($self, $md) = @_;
-    my $doc = $self->_parser->parse($md);
-    $self->_print($doc);
+
+    # Markdown::Parser is slow, therefore try and shortcut simple text.
+    #
+    # Plain text, no Markdown formatting (format characters and numbered
+    # lists):
+    if ($md !~ /[-#=*_>+]+/ && $md !~ /[0-9]+\./)
+    {
+        $self->_print($md);
+    }
+    elsif ($md =~ /^\h*(#{1,3})\h*(.*)/) # Headings
+    {
+        my $level = $1 eq '#' ? 1 : $1 eq '##' ? 2 : 3;
+        my $text  = $2;
+        my $header = odf_heading->create(
+            level   => $level,
+            style   => "Heading_20_$level",
+        );
+        $self->_print($text, header => $header);
+    }
+    else {
+        # Anything else, parse as Markdown:
+        my $doc = $self->_parser->parse($md);
+        $self->_print($doc);
+    }
 }
 
 has _stack => (
@@ -263,7 +285,17 @@ sub append_element
 sub _print
 {   my ($self, $item, %options) = @_;
 
-    if (!$item->isa('Markdown::Parser::Text'))
+    if (!ref $item) # Plain text, see comments above to shortcut parsing
+    {
+        push @{$self->_all_text}, {
+            text => $item,
+            styles => [],
+        };
+        # Print para
+        $self->_para(%options);
+        $self->_clear_all_text;
+    }
+    elsif (!$item->isa('Markdown::Parser::Text'))
     {
         my $ref = ref $item;
         $ref =~ s/^Markdown::Parser:://;
